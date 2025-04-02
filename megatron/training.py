@@ -41,6 +41,7 @@ from megatron.utils import calc_params_l2_norm
 from megatron.core.pipeline_parallel import get_forward_backward_func
 from megatron.utils import report_memory
 from megatron.model.vision.knn_monitor import compute_feature_bank
+import neck
 
 
 def print_datetime(string):
@@ -380,6 +381,11 @@ def setup_model_and_optimizer(model_provider_func,
     unwrapped_model = unwrap_model(model,
                                    (torchDDP, LocalDDP, Float16Module))
 
+    neck.parse_framework_config(args)
+    for vp_rank, model_chunk in enumerate(model):
+        neck.reinit_model(model_chunk, vp_rank)
+        neck.register_model_hooks(model_chunk, vp_rank)                               
+
     optimizer = get_megatron_optimizer(model, no_wd_decay_cond,
                                        scale_lr_cond, lr_mult)
     opt_param_scheduler = get_optimizer_param_scheduler(optimizer)
@@ -458,10 +464,17 @@ def train_step(forward_step_func, data_iterator,
                                        (torchDDP, LocalDDP, Float16Module))
         unwrapped_model.cancel_gradients_last_layer(args.curr_iteration)
 
+    for vp_rank, model_chunk in enumerate(model):
+        neck.prior_optim(model_chunk, vp_rank)
+
     # Update parameters.
     timers('optimizer', log_level=1).start(barrier=args.barrier_with_L1_time)
     update_successful, grad_norm, num_zeros_in_grad = optimizer.step(args, timers)
     timers('optimizer').stop()
+
+    neck.logger.update_iter_batch_cnt()
+    for vp_rank, model_chunk in enumerate(model):
+        neck.post_optim(model_chunk, vp_rank)
 
     # Gather params.
     if update_successful:
