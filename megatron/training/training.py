@@ -21,6 +21,7 @@ import time
 # The earliest we can measure the start time.
 _TRAIN_START_TIME = time.time()
 import torch
+import neck
 
 from megatron.core import mpu, tensor_parallel
 from megatron.core.utils import (
@@ -1046,6 +1047,11 @@ def setup_model_and_optimizer(model_provider_func,
 
     model = get_model(model_provider_func, model_type)
     unwrapped_model = unwrap_model(model)
+    
+    neck.parse_framework_config(args)
+    for vp_rank, model_chunk in enumerate(model):
+        neck.reinit_model(model_chunk, vp_rank)
+        neck.register_model_hooks(model_chunk, vp_rank)
 
     kwargs = {}
     for f in dataclasses.fields(OptimizerConfig):
@@ -1191,11 +1197,18 @@ def train_step(forward_step_func, data_iterator,
         unwrapped_model = unwrap_model(model[0])
         unwrapped_model.cancel_gradients_last_layer(args.curr_iteration)
 
+    for vp_rank, model_chunk in enumerate(model):
+        neck.prior_optim(model_chunk, vp_rank)
+
     # Update parameters.
 
     timers('optimizer', log_level=1).start(barrier=args.barrier_with_L1_time)
     update_successful, grad_norm, num_zeros_in_grad = optimizer.step()
     timers('optimizer').stop()
+
+    neck.logger.update_iter_batch_cnt()
+    for vp_rank, model_chunk in enumerate(model):
+        neck.post_optim(model_chunk, vp_rank)
 
     # when freezing sub-models we may have a mixture of successful and unsucessful ranks,
     # so we must gather across mp ranks

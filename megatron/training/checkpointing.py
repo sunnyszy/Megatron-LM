@@ -319,6 +319,7 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler, num_floati
     Dataloader checkpoint is only saved if the dataloader supports it. Currently this applies only
     to the Megatron Energon dataloader (multimodal) and not the built-in Megatron dataloader (text-only).
     """
+    return
     start_ckpt = time()
     args = get_args()
 
