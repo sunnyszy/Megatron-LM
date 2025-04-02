@@ -213,6 +213,7 @@ def get_rng_state():
 
 
 def save_checkpoint(iteration, model, optimizer, opt_param_scheduler):
+    return
     """Save a model checkpoint."""
     args = get_args()
 
