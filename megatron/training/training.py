@@ -1048,6 +1048,8 @@ def setup_model_and_optimizer(model_provider_func,
     model = get_model(model_provider_func, model_type)
     unwrapped_model = unwrap_model(model)
     
+    # print(model[0])
+    # exit(0)
     neck.parse_framework_config(args)
     for vp_rank, model_chunk in enumerate(model):
         neck.reinit_model(model_chunk, vp_rank)

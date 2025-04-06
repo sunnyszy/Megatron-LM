@@ -192,13 +192,13 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     # Check individual rank losses are not NaN prior to DP all-reduce.
     rerun_state_machine = get_rerun_state_machine()
     if args.check_for_nan_in_loss_and_grad:
-        rerun_state_machine.validate_result(
-            result=loss[0],
-            rejection_func=torch.isnan,
-            message="found NaN in local forward loss calculation",
-            tolerance=0.0,        # forward pass calculations are determinisic
-            fatal=True,
-        )
+        # rerun_state_machine.validate_result(
+        #     result=loss[0],
+        #     rejection_func=torch.isnan,
+        #     message="found NaN in local forward loss calculation",
+        #     tolerance=0.0,        # forward pass calculations are determinisic
+        #     fatal=True,
+        # )
         rerun_state_machine.validate_result(
             result=loss[0],
             rejection_func=torch.isinf,

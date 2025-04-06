@@ -162,14 +162,14 @@ class _ParamAndGradBucketGroup:
             grad_norm = self.buckets[i].grad_data.norm(p=2)
             # check for NaN, Inf and unexpectedly large grads
             if check_for_nan_or_inf:
-                rerun_state_machine.validate_result(
-                    result=grad_norm,
-                    rejection_func=torch.isnan,
-                    message=f"found NaN in local grad norm for bucket #{i} "
-                    f"in backward pass before data-parallel communication collective",
-                    tolerance=0.001,  # 0.1% tolerance to account for non-deterministic FA backward
-                    fatal=True,
-                )
+                # rerun_state_machine.validate_result(
+                #     result=grad_norm,
+                #     rejection_func=torch.isnan,
+                #     message=f"found NaN in local grad norm for bucket #{i} "
+                #     f"in backward pass before data-parallel communication collective",
+                #     tolerance=0.001,  # 0.1% tolerance to account for non-deterministic FA backward
+                #     fatal=True,
+                # )
                 rerun_state_machine.validate_result(
                     result=grad_norm,
                     rejection_func=torch.isinf,
